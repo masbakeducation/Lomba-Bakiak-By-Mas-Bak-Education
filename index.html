@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mas Bak Education - Permainan Bakiak Tradisional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .font-game {
+            font-family: 'Fredoka One', cursive;
+        }
+        canvas {
+            touch-action: none;
+        }
+        .btn-step {
+            transition: transform 0.08s ease, box-shadow 0.08s ease;
+        }
+        .btn-step:active {
+            transform: translateY(4px) scale(0.97);
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(234, 179, 8, 0.6); }
+            50% { box-shadow: 0 0 30px rgba(234, 179, 8, 1); }
+        }
+        .glow-active {
+            animation: pulse-glow 1.2s infinite;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 overflow-x-hidden">
+
+    <!-- MAIN CONTAINER -->
+    <div class="w-full max-w-4xl bg-slate-800 border-4 border-amber-600 rounded-2xl shadow-2xl overflow-hidden flex flex-col relative">
+        
+        <!-- TOP HEADER & HUD -->
+        <header class="bg-gradient-to-r from-amber-700 via-amber-600 to-amber-700 p-3 flex flex-wrap justify-between items-center border-b-4 border-amber-800 z-10">
+            <div class="flex items-center space-x-3">
+                <div class="bg-amber-900 text-amber-200 p-2 rounded-xl border-2 border-amber-400 flex items-center justify-center w-10 h-10 shadow-inner">
+                    <i class="fa-solid fa-shoe-prints text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-game text-xl sm:text-2xl text-amber-100 tracking-wide drop-shadow-md">MAS BAK EDUCATION</h1>
+                    <p class="text-xs text-amber-200 font-semibold">Lomba Balap Bakiak & Kuis Nusantara</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 sm:space-x-3 text-sm font-bold mt-2 sm:mt-0">
+                <!-- Rank HUD -->
+                <div class="bg-slate-900/90 px-3 py-1.5 rounded-lg border border-amber-400/60 flex items-center space-x-1.5">
+                    <span class="text-xs text-slate-400">Posisi:</span>
+                    <span id="hud-rank" class="font-game text-amber-300 text-base">#1</span>
+                </div>
+                <div class="bg-slate-900/80 px-3 py-1.5 rounded-lg border border-amber-500/40 flex items-center space-x-2">
+                    <i class="fa-solid fa-trophy text-amber-400"></i>
+                    <span id="hud-score" class="font-game text-amber-300 text-base">0</span>
+                </div>
+                <div class="bg-slate-900/80 px-3 py-1.5 rounded-lg border border-amber-500/40 flex items-center space-x-2">
+                    <i class="fa-solid fa-fire text-red-400"></i>
+                    <span id="hud-combo" class="font-game text-red-300 text-base">0x</span>
+                </div>
+                <button id="btn-sound-toggle" class="bg-slate-900/80 hover:bg-slate-700 text-amber-300 p-2 rounded-lg border border-amber-500/40 transition">
+                    <i id="sound-icon" class="fa-solid fa-volume-high"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- CANVAS GAME SCREEN -->
+        <div class="relative w-full bg-sky-300 flex justify-center items-center overflow-hidden" style="min-height: 300px; max-height: 440px; aspect-ratio: 16/9;">
+            <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+            <!-- OVERLAY: START SCREEN WITH DIFFICULTY / LEVEL SELECT -->
+            <div id="start-screen" class="absolute inset-0 bg-slate-950/90 backdrop-blur-sm flex flex-col justify-center items-center p-4 sm:p-6 text-center z-20">
+                <div class="bg-amber-500 text-amber-950 font-game text-xs sm:text-sm px-4 py-1 rounded-full uppercase tracking-wider mb-2 animate-bounce">
+                    🏁 Pertandingan Balap Bakiak Edukasi
+                </div>
+                <h2 class="font-game text-3xl sm:text-5xl text-amber-300 mb-1 drop-shadow-lg">MAS BAK EDUCATION</h2>
+                <p class="text-slate-300 max-w-md text-xs sm:text-sm mb-4 leading-relaxed">
+                    Kalahkan 2 tim lawan di lintasan balap! Langkahkan kaki secara ritmis (<b>Kiri</b> lalu <b>Kanan</b>) dan jawab Kuis Edukasi untuk mendapat bonus kecepatan!
+                </p>
+
+                <!-- Difficulty Selection -->
+                <div class="mb-5 w-full max-w-md">
+                    <label class="block text-amber-300 font-game text-sm mb-2">Pilih Tingkat Kesulitan:</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button class="btn-diff p-2.5 rounded-xl border-2 border-emerald-500 bg-emerald-950/80 hover:bg-emerald-800 text-emerald-200 font-bold text-xs sm:text-sm flex flex-col items-center" data-level="EASY">
+                            <span>🌱 MUDAH</span>
+                            <span class="text-[10px] text-emerald-300 font-normal mt-0.5">Musuh Santai</span>
+                        </button>
+                        <button class="btn-diff p-2.5 rounded-xl border-2 border-amber-500 bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm flex flex-col items-center ring-2 ring-amber-300" data-level="MEDIUM">
+                            <span>⚡ SEDANG</span>
+                            <span class="text-[10px] text-amber-950 font-normal mt-0.5">Musuh Cepat</span>
+                        </button>
+                        <button class="btn-diff p-2.5 rounded-xl border-2 border-red-500 bg-red-950/80 hover:bg-red-800 text-red-200 font-bold text-xs sm:text-sm flex flex-col items-center" data-level="HARD">
+                            <span>🔥 SULIT</span>
+                            <span class="text-[10px] text-red-300 font-normal mt-0.5">Musuh Pro</span>
+                        </button>
+                    </div>
+                </div>
+
+                <button id="btn-start" class="btn-step bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-game text-lg sm:text-xl px-10 py-3.5 rounded-2xl shadow-lg border-b-4 border-orange-800 flex items-center space-x-2">
+                    <i class="fa-solid fa-flag-checkered"></i>
+                    <span>MULAI PERTANDINGAN</span>
+                </button>
+            </div>
+
+            <!-- RESULT SCREEN OVERLAY -->
+            <div id="result-screen" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex flex-col justify-center items-center p-6 text-center z-20">
+                <div id="result-badge" class="text-6xl mb-2">🥇</div>
+                <h2 id="result-title" class="font-game text-3xl sm:text-4xl text-amber-300 mb-1">JUARA 1!</h2>
+                <p id="result-desc" class="text-slate-300 text-xs sm:text-sm mb-4">Tim Mas Bak berhasil memenangkan pertandingan balap bakiak!</p>
+                
+                <div class="bg-slate-800/90 border border-slate-700 p-4 rounded-2xl w-full max-w-xs mb-5 space-y-2 text-sm">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Peringkat Akhir:</span>
+                        <span id="final-rank" class="font-game text-amber-300 text-lg">#1 (Emas)</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Total Skor:</span>
+                        <span id="final-score" class="font-game text-amber-400 text-lg">0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Kuis Benar:</span>
+                        <span id="final-quiz" class="font-semibold text-emerald-400">0/0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400">Waktu Tempuh:</span>
+                        <span id="final-time" class="font-semibold text-blue-400">0s</span>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-3 w-full max-w-xs justify-center">
+                    <button id="btn-restart" class="btn-step bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-game text-sm sm:text-base px-5 py-3 rounded-2xl shadow-lg border-b-4 border-teal-800 flex items-center justify-center space-x-2 flex-1">
+                        <i class="fa-solid fa-rotate-right"></i>
+                        <span>MAIN LAGI</span>
+                    </button>
+                    <button id="btn-home" class="btn-step bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-game text-sm sm:text-base px-5 py-3 rounded-2xl shadow-lg border-b-4 border-orange-800 flex items-center justify-center space-x-2 flex-1">
+                        <i class="fa-solid fa-house"></i>
+                        <span>MENU UTAMA</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROGRESS & RHYTHM BAR -->
+        <div class="bg-slate-900 border-t border-slate-700 p-3 space-y-2">
+            <!-- Distance Bar -->
+            <div class="flex justify-between items-center text-xs font-semibold text-slate-400">
+                <span>START (0m)</span>
+                <span id="dist-text" class="text-amber-400 font-game text-sm">0m / 500m</span>
+                <span>FINISH (500m)</span>
+            </div>
+            <div class="w-full bg-slate-800 h-3.5 rounded-full overflow-hidden border border-slate-700 p-0.5">
+                <div id="progress-bar" class="bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-400 h-full rounded-full w-0 transition-all duration-200"></div>
+            </div>
+
+            <!-- Rhythm Step Feedback -->
+            <div class="flex justify-between items-center pt-1">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-400">Status Irama:</span>
+                    <span id="step-status" class="font-game text-xs sm:text-sm px-2.5 py-0.5 rounded-full bg-slate-800 text-amber-300 border border-slate-700">SIAP BALAP!</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-xs text-slate-400">Next Step:</span>
+                    <span id="next-step-indicator" class="font-game text-xs sm:text-sm px-3 py-0.5 rounded-lg bg-blue-600 text-white animate-pulse">KIRI</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTROLS FOOTER (Big Touch Buttons) -->
+        <footer class="bg-slate-950 p-4 border-t-2 border-slate-800 grid grid-cols-2 gap-4">
+            <button id="btn-left" class="btn-step bg-gradient-to-b from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 active:from-blue-700 active:to-blue-900 text-white font-game text-xl sm:text-2xl py-4 rounded-2xl border-b-4 border-blue-950 shadow-lg flex items-center justify-center space-x-2">
+                <i class="fa-solid fa-footprints transform -scale-x-1"></i>
+                <span>LANGKAH KIRI [A]</span>
+            </button>
+            <button id="btn-right" class="btn-step bg-gradient-to-b from-emerald-600 to-emerald-800 hover:from-emerald-500 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-900 text-white font-game text-xl sm:text-2xl py-4 rounded-2xl border-b-4 border-emerald-950 shadow-lg flex items-center justify-center space-x-2">
+                <span>LANGKAH KANAN [D]</span>
+                <i class="fa-solid fa-footprints"></i>
+            </button>
+        </footer>
+
+        <!-- EDUCATIONAL QUIZ MODAL -->
+        <div id="quiz-modal" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-md flex justify-center items-center p-4 z-50">
+            <div class="bg-slate-800 border-4 border-amber-500 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl relative animate-scale-in flex flex-col max-h-[90vh]">
+                
+                <!-- Pos Header -->
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-700">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-amber-500 text-slate-950 text-xs font-bold px-2.5 py-1 rounded-full uppercase">POS EDUKASI</span>
+                        <span id="quiz-category" class="text-xs text-amber-300 font-semibold">Kebudayaan Indonesia</span>
+                    </div>
+                    <div class="flex items-center space-x-1 bg-slate-900 px-3 py-1 rounded-full border border-slate-700">
+                        <i class="fa-solid fa-clock text-amber-400 text-xs"></i>
+                        <span id="quiz-timer" class="font-game text-amber-300 text-sm">15s</span>
+                    </div>
+                </div>
+
+                <!-- Question Box -->
+                <div class="mb-5 overflow-y-auto custom-scrollbar pr-1">
+                    <h3 id="quiz-question" class="font-bold text-slate-100 text-base sm:text-lg leading-snug">
+                        Apakah nama alat musik tradisional khas Jawa Barat yang terbuat dari bambu?
+                    </h3>
+                </div>
+
+                <!-- Answer Options -->
+                <div id="quiz-options" class="grid grid-cols-1 gap-2.5 mb-4">
+                    <!-- Dynamic buttons injected here -->
+                </div>
+
+                <!-- Explanation / Feedback Footer -->
+                <div id="quiz-feedback" class="hidden p-3 rounded-xl bg-slate-900 border border-slate-700 text-xs text-slate-300">
+                    <div id="quiz-feedback-title" class="font-bold text-emerald-400 mb-1">Jawaban Tepat! 🎉</div>
+                    <div id="quiz-feedback-desc">Angklung adalah alat musik bernada ganda dari bambu khas Sunda.</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        /* SOUND SYNTHESIZER */
+        class AudioEngine {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playStep(freq = 160) {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.08);
+
+                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.08);
+                } catch(e) {}
+            }
+
+            playCorrect() {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    const notes = [523.25, 659.25, 783.99, 1046.50];
+                    notes.forEach((freq, idx) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.08);
+                        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.2);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(this.ctx.currentTime + idx * 0.08);
+                        osc.stop(this.ctx.currentTime + idx * 0.08 + 0.2);
+                    });
+                } catch(e) {}
+            }
+
+            playWrong() {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+                    osc.frequency.linearRampToValueAtTime(90, this.ctx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.25);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + 0.25);
+                } catch(e) {}
+            }
+
+            playCheer() {
+                if (!this.enabled) return;
+                this.init();
+                try {
+                    [440, 554.37, 659.25, 880].forEach((freq, i) => {
+                        const osc = this.ctx.createOscillator();
+                        const gain = this.ctx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.value = freq;
+                        gain.gain.setValueAtTime(0.25, this.ctx.currentTime + i * 0.1);
+                        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + i * 0.1 + 0.4);
+                        osc.connect(gain);
+                        gain.connect(this.ctx.destination);
+                        osc.start(this.ctx.currentTime + i * 0.1);
+                        osc.stop(this.ctx.currentTime + i * 0.1 + 0.4);
+                    });
+                } catch(e) {}
+            }
+        }
+
+        const audio = new AudioEngine();
+    </script>
+
+    <script>
+        /* EDUCATIONAL QUESTION BANK */
+        const QUIZ_BANK = [
+            {
+                category: "Permainan Tradisional",
+                question: "Bakiak adalah permainan tradisional yang dimainkan secara tim menggunakan kayu panjang. Apa kunci utama untuk memenangkan balap bakiak?",
+                options: ["Kekuatan otot kaki", "Kompak dan kekompakan irama langkah", "Berlari secepat mungkin sendirian", "Menggunakan sepatu roda"],
+                correct: 1,
+                desc: "Kunci permainan bakiak adalah sinkronisasi dan irama langkah (kiri-kanan) bersama tim!"
+            },
+            {
+                category: "Kebudayaan Nusantara",
+                question: "Alat musik tradisional Jawa Barat yang terbuat dari pipa-pipa bambu dan dimainkan dengan cara digoyangkan adalah...",
+                options: ["Gamelan", "Angklung", "Sasando", "Kolintang"],
+                correct: 1,
+                desc: "Angklung telah diakui UNESCO sebagai Warisan Budaya Takbenda Dunia dari Indonesia!"
+            },
+            {
+                category: "Sejarah & Kebangsaan",
+                question: "Siapakah tokoh yang membacakan Teks Proklamasi Kemerdekaan Indonesia pada 17 Agustus 1945?",
+                options: ["Ir. Soekarno", "Drs. Mohammad Hatta", "Ki Hajar Dewantara", "Sutan Sjahrir"],
+                correct: 0,
+                desc: "Ir. Soekarno didampingi Drs. Mohammad Hatta membacakan teks proklamasi di Jalan Pegangsaan Timur No. 56."
+            },
+            {
+                category: "Geografi Indonesia",
+                question: "Danau vulkanik terbesar di Indonesia sekaligus di Asia Tenggara adalah Danau...",
+                options: ["Danau Singkarak", "Danau Toba", "Danau Maninjau", "Danau Sentani"],
+                correct: 1,
+                desc: "Danau Toba terletak di Sumatera Utara dan terbentuk dari letusan gunung berapi purba yang sangat dahsyat."
+            },
+            {
+                category: "Matematika Dasar",
+                question: "Jika tim Bakiak melangkah sebanyak 12 kali dalam 10 detik, berapa rata-rata langkah per detik?",
+                options: ["1.0 langkah", "1.2 langkah", "1.5 langkah", "2.0 langkah"],
+                correct: 1,
+                desc: "12 langkah / 10 detik = 1.2 langkah per detik."
+            },
+            {
+                category: "Ilmu Pengetahuan Alam",
+                question: "Hewan endemik khas dari Nusa Tenggara Timur yang merupakan spesies kadal terbesar di dunia adalah...",
+                options: ["Komodo", "Babi Rusa", "Anoa", "Cenderawasih"],
+                correct: 0,
+                desc: "Komodo (Varanus komodoensis) adalah spesies kadal purba terbesar yang hidup di Taman Nasional Komodo."
+            },
+            {
+                category: "Kebudayaan Nusantara",
+                question: "Rumah adat khas Minangkabau yang memiliki atap melengkung menyerupai tanduk kerbau bernama Rumah...",
+                options: ["Tongkonan", "Gadang", "Joglo", "Honai"],
+                correct: 1,
+                desc: "Rumah Gadang memiliki seni arsitektur khas puncak atap berbentuk Gonjong menyerupai tanduk kerbau."
+            },
+            {
+                category: "Pancasila & Kewarganegaraan",
+                question: "Semboyan nasional Indonesia 'Bhinneka Tunggal Ika' memiliki arti...",
+                options: ["Bersatu kita teguh bercerai kita runtuh", "Berbeda-beda tetapi tetap satu jua", "Majulah pantang mundur", "Gotong royong untuk bersama"],
+                correct: 1,
+                desc: "Bhinneka Tunggal Ika berasal dari Kitab Sutasoma karya Mpu Tantular."
+            }
+        ];
+    </script>
+
+    <script>
+        // DOM Elements
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const btnStart = document.getElementById('btn-start');
+        const btnRestart = document.getElementById('btn-restart');
+        const btnHome = document.getElementById('btn-home');
+        const btnLeft = document.getElementById('btn-left');
+        const btnRight = document.getElementById('btn-right');
+        const btnSoundToggle = document.getElementById('btn-sound-toggle');
+        const soundIcon = document.getElementById('sound-icon');
+        
+        const startScreen = document.getElementById('start-screen');
+        const resultScreen = document.getElementById('result-screen');
+        const quizModal = document.getElementById('quiz-modal');
+        
+        const hudRank = document.getElementById('hud-rank');
+        const hudScore = document.getElementById('hud-score');
+        const hudCombo = document.getElementById('hud-combo');
+        const progressBar = document.getElementById('progress-bar');
+        const distText = document.getElementById('dist-text');
+        const stepStatus = document.getElementById('step-status');
+        const nextStepIndicator = document.getElementById('next-step-indicator');
+
+        const resultBadge = document.getElementById('result-badge');
+        const resultTitle = document.getElementById('result-title');
+        const resultDesc = document.getElementById('result-desc');
+        const resultRank = document.getElementById('final-rank');
+        const resultScore = document.getElementById('final-score');
+        const resultQuiz = document.getElementById('final-quiz');
+        const resultTime = document.getElementById('final-time');
+
+        // Difficulty Configurations
+        const DIFFICULTY_CONFIG = {
+            EASY: {
+                aiSpeedBase: 2.2,
+                aiSpeedVar: 0.8,
+                quizTimeLimit: 20,
+                name: 'Mudah'
+            },
+            MEDIUM: {
+                aiSpeedBase: 3.5,
+                aiSpeedVar: 1.2,
+                quizTimeLimit: 15,
+                name: 'Sedang'
+            },
+            HARD: {
+                aiSpeedBase: 4.8,
+                aiSpeedVar: 1.6,
+                quizTimeLimit: 10,
+                name: 'Sulit'
+            }
+        };
+
+        let selectedDifficulty = 'MEDIUM';
+
+        // Game State Variables
+        let isPlaying = false;
+        let isQuizActive = false;
+        let distance = 0; // Player distance
+        const maxDistance = 500;
+        let score = 0;
+        let combo = 0;
+        let speed = 0; // Player forward speed
+        let lastStepTime = 0;
+        let expectedStep = 'LEFT';
+        let startTime = 0;
+        let totalTime = 0;
+        let currentRank = 1;
+
+        // AI Competitors State
+        let aiTeams = [
+            { name: 'Tim Merah', distance: 0, speed: 0, color: '#dc2626', hatColor: '#991b1b', legLeft: 0, legRight: 0 },
+            { name: 'Tim Garuda', distance: 0, speed: 0, color: '#eab308', hatColor: '#a16207', legLeft: 0, legRight: 0 }
+        ];
+
+        let quizCount = 0;
+        let quizCorrect = 0;
+        let currentQuiz = null;
+        let quizTimerInterval = null;
+        let quizTimeLeft = 15;
+
+        // Player Bakiak Animation State
+        let teamLegLeftPos = 0;
+        let teamLegRightPos = 0;
+        let stumbleTimer = 0;
+        let isStumbling = false;
+
+        // Parallax Background offsets
+        let bgOffsetSky = 0;
+        let bgOffsetHills = 0;
+        let bgOffsetTrees = 0;
+
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        const checkpoints = [100, 200, 300, 400];
+        let passedCheckpoints = [];
+
+        // Difficulty buttons selection handler
+        document.querySelectorAll('.btn-diff').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-diff').forEach(b => {
+                    b.classList.remove('bg-amber-500', 'text-slate-950', 'ring-2', 'ring-amber-300');
+                    b.classList.add('bg-slate-800', 'text-slate-200');
+                });
+                btn.classList.add('bg-amber-500', 'text-slate-950', 'ring-2', 'ring-amber-300');
+                selectedDifficulty = btn.getAttribute('data-level');
+            });
+        });
+
+        /* GAME ENGINE CORE */
+        function initGame() {
+            distance = 0;
+            score = 0;
+            combo = 0;
+            speed = 0;
+            expectedStep = 'LEFT';
+            startTime = Date.now();
+            quizCount = 0;
+            quizCorrect = 0;
+            passedCheckpoints = [];
+            isStumbling = false;
+            stumbleTimer = 0;
+            currentRank = 1;
+
+            // Reset AI Opponents
+            aiTeams[0].distance = 0;
+            aiTeams[0].speed = DIFFICULTY_CONFIG[selectedDifficulty].aiSpeedBase;
+            aiTeams[1].distance = 0;
+            aiTeams[1].speed = DIFFICULTY_CONFIG[selectedDifficulty].aiSpeedBase * 0.95;
+
+            hudRank.textContent = '#1';
+            hudScore.textContent = '0';
+            hudCombo.textContent = '0x';
+            progressBar.style.width = '0%';
+            distText.textContent = `0m / ${maxDistance}m`;
+            
+            updateStepUI();
+
+            startScreen.classList.add('hidden');
+            resultScreen.classList.add('hidden');
+            quizModal.classList.add('hidden');
+
+            isPlaying = true;
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateStepUI() {
+            if (expectedStep === 'LEFT') {
+                nextStepIndicator.textContent = 'KIRI';
+                nextStepIndicator.className = 'font-game text-xs sm:text-sm px-3 py-0.5 rounded-lg bg-blue-600 text-white animate-pulse';
+                btnLeft.classList.add('ring-4', 'ring-blue-400');
+                btnRight.classList.remove('ring-4', 'ring-emerald-400');
+            } else {
+                nextStepIndicator.textContent = 'KANAN';
+                nextStepIndicator.className = 'font-game text-xs sm:text-sm px-3 py-0.5 rounded-lg bg-emerald-600 text-white animate-pulse';
+                btnRight.classList.add('ring-4', 'ring-emerald-400');
+                btnLeft.classList.remove('ring-4', 'ring-blue-400');
+            }
+        }
+
+        function handleStep(type) {
+            if (!isPlaying || isQuizActive) return;
+
+            const now = Date.now();
+            const timeDiff = now - lastStepTime;
+
+            if (type === expectedStep) {
+                audio.playStep(expectedStep === 'LEFT' ? 180 : 220);
+                
+                let rhythmMultiplier = 1;
+                if (timeDiff > 180 && timeDiff < 600) {
+                    combo += 1;
+                    rhythmMultiplier = 1.5;
+                    stepStatus.textContent = 'IRAMA HEBAT! 🔥';
+                    stepStatus.className = 'font-game text-xs sm:text-sm px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500';
+                } else {
+                    combo = Math.max(1, combo);
+                    stepStatus.textContent = 'BAGUS!';
+                    stepStatus.className = 'font-game text-xs sm:text-sm px-2.5 py-0.5 rounded-full bg-slate-800 text-amber-300 border border-slate-700';
+                }
+
+                speed = Math.min(speed + (1.8 * rhythmMultiplier), 6.5);
+                score += Math.floor(10 * (1 + combo * 0.1));
+
+                if (type === 'LEFT') {
+                    teamLegLeftPos = 1;
+                    teamLegRightPos = -0.5;
+                } else {
+                    teamLegLeftPos = -0.5;
+                    teamLegRightPos = 1;
+                }
+
+                expectedStep = expectedStep === 'LEFT' ? 'RIGHT' : 'LEFT';
+                lastStepTime = now;
+
+            } else {
+                audio.playWrong();
+                isStumbling = true;
+                stumbleTimer = 35;
+                speed = 0.2;
+                combo = 0;
+                stepStatus.textContent = 'TERSEMPOT! (Langkah Salah)';
+                stepStatus.className = 'font-game text-xs sm:text-sm px-2.5 py-0.5 rounded-full bg-red-950 text-red-300 border border-red-500 animate-bounce';
+            }
+
+            hudScore.textContent = score;
+            hudCombo.textContent = `${combo}x`;
+            updateStepUI();
+        }
+
+        function checkCheckpointTrigger() {
+            for (let cp of checkpoints) {
+                if (distance >= cp && !passedCheckpoints.includes(cp)) {
+                    passedCheckpoints.push(cp);
+                    triggerQuizModal();
+                    break;
+                }
+            }
+        }
+
+        function triggerQuizModal() {
+            isQuizActive = true;
+            const qIndex = Math.floor(Math.random() * QUIZ_BANK.length);
+            currentQuiz = QUIZ_BANK[qIndex];
+            quizCount++;
+
+            document.getElementById('quiz-category').textContent = currentQuiz.category;
+            document.getElementById('quiz-question').textContent = currentQuiz.question;
+            document.getElementById('quiz-feedback').classList.add('hidden');
+
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+
+            currentQuiz.options.forEach((optText, idx) => {
+                const optBtn = document.createElement('button');
+                optBtn.className = 'w-full text-left p-3 rounded-xl bg-slate-700/80 hover:bg-amber-600/30 border border-slate-600 hover:border-amber-400 text-slate-100 font-semibold text-xs sm:text-sm transition flex items-center justify-between group';
+                optBtn.innerHTML = `
+                    <span><strong class="text-amber-400 mr-2">${String.fromCharCode(65 + idx)}.</strong> ${optText}</span>
+                    <i class="fa-solid fa-chevron-right text-slate-500 group-hover:text-amber-400 transition"></i>
+                `;
+                optBtn.onclick = () => handleQuizAnswer(idx);
+                optionsContainer.appendChild(optBtn);
+            });
+
+            quizTimeLeft = DIFFICULTY_CONFIG[selectedDifficulty].quizTimeLimit;
+            document.getElementById('quiz-timer').textContent = `${quizTimeLeft}s`;
+            quizModal.classList.remove('hidden');
+
+            if (quizTimerInterval) clearInterval(quizTimerInterval);
+            quizTimerInterval = setInterval(() => {
+                quizTimeLeft--;
+                document.getElementById('quiz-timer').textContent = `${quizTimeLeft}s`;
+                if (quizTimeLeft <= 0) {
+                    clearInterval(quizTimerInterval);
+                    handleQuizAnswer(-1);
+                }
+            }, 1000);
+        }
+
+        function handleQuizAnswer(selectedIndex) {
+            if (quizTimerInterval) clearInterval(quizTimerInterval);
+
+            const feedbackEl = document.getElementById('quiz-feedback');
+            const feedbackTitle = document.getElementById('quiz-feedback-title');
+            const feedbackDesc = document.getElementById('quiz-feedback-desc');
+            const optionBtns = document.getElementById('quiz-options').children;
+
+            for (let btn of optionBtns) {
+                btn.disabled = true;
+                btn.classList.add('opacity-75', 'cursor-not-allowed');
+            }
+
+            if (selectedIndex === currentQuiz.correct) {
+                quizCorrect++;
+                audio.playCorrect();
+                score += 250;
+                speed = 6.2;
+                combo += 3;
+
+                if (optionBtns[selectedIndex]) {
+                    optionBtns[selectedIndex].classList.remove('bg-slate-700/80', 'border-slate-600');
+                    optionBtns[selectedIndex].classList.add('bg-emerald-600/40', 'border-emerald-400', 'text-emerald-200');
+                }
+
+                feedbackTitle.textContent = "JAWABAN TEPAT! ⚡ Boost Kecepatan!";
+                feedbackTitle.className = "font-bold text-emerald-400 mb-1 text-sm";
+            } else {
+                audio.playWrong();
+                if (selectedIndex >= 0 && optionBtns[selectedIndex]) {
+                    optionBtns[selectedIndex].classList.remove('bg-slate-700/80', 'border-slate-600');
+                    optionBtns[selectedIndex].classList.add('bg-red-600/40', 'border-red-400', 'text-red-200');
+                }
+                if (optionBtns[currentQuiz.correct]) {
+                    optionBtns[currentQuiz.correct].classList.add('bg-emerald-600/30', 'border-emerald-400');
+                }
+
+                feedbackTitle.textContent = "JAWABAN KURANG TEPAT!";
+                feedbackTitle.className = "font-bold text-red-400 mb-1 text-sm";
+            }
+
+            feedbackDesc.textContent = currentQuiz.desc;
+            feedbackEl.classList.remove('hidden');
+
+            hudScore.textContent = score;
+            hudCombo.textContent = `${combo}x`;
+
+            setTimeout(() => {
+                quizModal.classList.add('hidden');
+                isQuizActive = false;
+                lastStepTime = Date.now();
+                requestAnimationFrame(gameLoop);
+            }, 2000);
+        }
+
+        function drawScene() {
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // 1. SKY & SUN
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, h * 0.45);
+            skyGradient.addColorStop(0, '#38bdf8');
+            skyGradient.addColorStop(1, '#bae6fd');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, w, h);
+
+            ctx.fillStyle = '#fef08a';
+            ctx.beginPath();
+            ctx.arc(w * 0.85, h * 0.15, 28, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            const cloudX = (bgOffsetSky) % (w + 200);
+            drawCloud(w - cloudX, h * 0.1, 0.8);
+            drawCloud(w - cloudX + 350, h * 0.18, 0.5);
+
+            // 2. PARALLAX HILLS & INDONESIAN MONUMENTS
+            ctx.fillStyle = '#4ade80';
+            ctx.beginPath();
+            ctx.ellipse(w * 0.3 - (bgOffsetHills % w), h * 0.48, w * 0.5, h * 0.2, 0, 0, Math.PI * 2);
+            ctx.ellipse(w * 0.9 - (bgOffsetHills % w), h * 0.48, w * 0.6, h * 0.22, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Monas Landmark
+            ctx.fillStyle = '#166534';
+            const landmarkX = (w * 0.7 - (bgOffsetTrees % w) + w) % w;
+            ctx.fillRect(landmarkX, h * 0.28, 14, h * 0.18);
+            ctx.beginPath();
+            ctx.arc(landmarkX + 7, h * 0.27, 8, 0, Math.PI * 2);
+            ctx.fillStyle = '#eab308';
+            ctx.fill();
+
+            // 3. MULTI-LANE TRACK (3 BALAP LANES)
+            const trackStartY = h * 0.45;
+            const laneHeight = (h - trackStartY) / 3;
+
+            // Lane Ground Backgrounds
+            for (let i = 0; i < 3; i++) {
+                const laneY = trackStartY + (i * laneHeight);
+                const laneGrad = ctx.createLinearGradient(0, laneY, 0, laneY + laneHeight);
+                if (i === 1) { // Player Lane
+                    laneGrad.addColorStop(0, '#d97706');
+                    laneGrad.addColorStop(1, '#b45309');
+                } else { // AI Lanes
+                    laneGrad.addColorStop(0, '#ca8a04');
+                    laneGrad.addColorStop(1, '#854d0e');
+                }
+                ctx.fillStyle = laneGrad;
+                ctx.fillRect(0, laneY, w, laneHeight);
+
+                // Lane Separator Lines
+                ctx.strokeStyle = '#fef08a';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.setLineDash([12, 12]);
+                ctx.moveTo(0, laneY);
+                ctx.lineTo(w, laneY);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Flags along track
+            for (let i = 0; i < 5; i++) {
+                const flagX = ((i * 220) - (bgOffsetTrees % (w + 220)) + w) % w;
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(flagX, trackStartY - 25, 22, 6);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(flagX, trackStartY - 19, 22, 6);
+                ctx.fillStyle = '#475569';
+                ctx.fillRect(flagX - 2, trackStartY - 25, 2, 25);
+            }
+
+            // 4. DRAW BAKIAK TEAMS ON LANES
+            // Lane 0: Tim Merah (AI 1)
+            const ai1RelX = w * 0.35 + ((aiTeams[0].distance - distance) * 12);
+            drawRunnerTeam(ai1RelX, trackStartY + (laneHeight * 0.2), aiTeams[0].color, aiTeams[0].hatColor, "Tim Merah", aiTeams[0].distance);
+
+            // Lane 1: Tim Mas Bak (PLAYER)
+            drawRunnerTeam(w * 0.35, trackStartY + laneHeight + (laneHeight * 0.2), '#ea580c', '#78350f', "Tim Mas Bak (Player)", distance, true);
+
+            // Lane 2: Tim Garuda (AI 2)
+            const ai2RelX = w * 0.35 + ((aiTeams[1].distance - distance) * 12);
+            drawRunnerTeam(ai2RelX, trackStartY + (laneHeight * 2) + (laneHeight * 0.2), aiTeams[1].color, aiTeams[1].hatColor, "Tim Garuda", aiTeams[1].distance);
+        }
+
+        function drawCloud(x, y, scale) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.scale(scale, scale);
+            ctx.beginPath();
+            ctx.arc(0, 0, 20, 0, Math.PI * 2);
+            ctx.arc(18, -10, 22, 0, Math.PI * 2);
+            ctx.arc(40, 0, 18, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawRunnerTeam(startX, startY, shirtColor, hatColor, teamLabel, teamDist, isPlayer = false) {
+            ctx.save();
+
+            // Stumble tilt for player
+            if (isPlayer && isStumbling) {
+                ctx.translate(startX, startY);
+                ctx.rotate(Math.sin(stumbleTimer * 0.4) * 0.12);
+                ctx.translate(-startX, -startY);
+            }
+
+            const boardLength = 130;
+            const boardY = startY + 30;
+
+            // Wooden Bakiak Board
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(startX - 15, boardY, boardLength, 8);
+            ctx.fillStyle = '#b45309';
+            ctx.fillRect(startX - 15, boardY, boardLength, 3);
+
+            // Straps
+            const playerOffsets = [0, 42, 84];
+            playerOffsets.forEach(offX => {
+                ctx.fillStyle = '#dc2626';
+                ctx.fillRect(startX + offX - 4, boardY - 3, 15, 4);
+            });
+
+            // Runners
+            playerOffsets.forEach((offX, idx) => {
+                const px = startX + offX;
+                const py = startY;
+
+                const bounceY = Math.abs(Math.sin((teamDist || 0) * 0.4)) * 4;
+
+                // Body
+                ctx.fillStyle = shirtColor;
+                ctx.beginPath();
+                ctx.roundRect(px - 8, py - 2 - bounceY, 18, 22, 4);
+                ctx.fill();
+
+                // Head
+                ctx.fillStyle = '#fdba74';
+                ctx.beginPath();
+                ctx.arc(px + 1, py - 10 - bounceY, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Peci/Hat
+                ctx.fillStyle = hatColor;
+                ctx.fillRect(px - 8, py - 20 - bounceY, 18, 8);
+
+                // Eyes
+                ctx.fillStyle = '#1e293b';
+                ctx.beginPath();
+                ctx.arc(px + 4, py - 11 - bounceY, 1.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Team Name Label Overhead
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+            ctx.fillRect(startX - 10, startY - 36, 110, 16);
+            ctx.fillStyle = isPlayer ? '#fde047' : '#ffffff';
+            ctx.font = 'bold 10px "Plus Jakarta Sans"';
+            ctx.fillText(`${teamLabel} (${Math.floor(teamDist)}m)`, startX - 5, startY - 24);
+
+            ctx.restore();
+        }
+
+        function updateRankings() {
+            const racers = [
+                { name: 'Mas Bak', dist: distance, isPlayer: true },
+                { name: 'Tim Merah', dist: aiTeams[0].distance, isPlayer: false },
+                { name: 'Tim Garuda', dist: aiTeams[1].distance, isPlayer: false }
+            ];
+
+            racers.sort((a, b) => b.dist - a.dist);
+            const pRank = racers.findIndex(r => r.isPlayer) + 1;
+            currentRank = pRank;
+
+            hudRank.textContent = `#${currentRank}`;
+        }
+
+        function gameLoop() {
+            if (!isPlaying) return;
+
+            if (!isQuizActive) {
+                // Player Physics
+                speed *= 0.96;
+                if (speed < 0.05) speed = 0;
+
+                if (isStumbling) {
+                    stumbleTimer--;
+                    if (stumbleTimer <= 0) isStumbling = false;
+                }
+
+                distance += speed * 0.15;
+
+                // AI Teams Physics Logic based on difficulty
+                const diff = DIFFICULTY_CONFIG[selectedDifficulty];
+                aiTeams.forEach((ai, idx) => {
+                    const randomSpeedVariation = (Math.random() - 0.45) * diff.aiSpeedVar;
+                    ai.speed = Math.min(Math.max(ai.speed + randomSpeedVariation, diff.aiSpeedBase * 0.7), diff.aiSpeedBase * 1.4);
+                    ai.distance += ai.speed * 0.12;
+                });
+
+                // Parallax background updates
+                bgOffsetSky += speed * 0.2;
+                bgOffsetHills += speed * 0.6;
+                bgOffsetTrees += speed * 1.8;
+
+                // UI Progress
+                const progressPct = Math.min(100, (distance / maxDistance) * 100);
+                progressBar.style.width = `${progressPct}%`;
+                distText.textContent = `${Math.floor(distance)}m / ${maxDistance}m`;
+
+                updateRankings();
+                checkCheckpointTrigger();
+
+                // Finish condition check
+                if (distance >= maxDistance || aiTeams[0].distance >= maxDistance || aiTeams[1].distance >= maxDistance) {
+                    finishGame();
+                    return;
+                }
+            }
+
+            drawScene();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function finishGame() {
+            isPlaying = false;
+            audio.playCheer();
+
+            totalTime = Math.floor((Date.now() - startTime) / 1000);
+            updateRankings();
+
+            if (currentRank === 1) {
+                resultBadge.textContent = '🥇';
+                resultTitle.textContent = 'JUARA 1 (MEDALI EMAS)!';
+                resultRank.textContent = '#1 (Emas)';
+                resultDesc.textContent = 'Luar biasa! Tim Mas Bak memenangkan pertandingan balap bakiak!';
+            } else if (currentRank === 2) {
+                resultBadge.textContent = '🥈';
+                resultTitle.textContent = 'JUARA 2 (MEDALI PERAK)!';
+                resultRank.textContent = '#2 (Perak)';
+                resultDesc.textContent = 'Kerja bagus! Tim Mas Bak berhasil merebut posisi kedua!';
+            } else {
+                resultBadge.textContent = '🥉';
+                resultTitle.textContent = 'JUARA 3 (MEDALI PERUNGGU)';
+                resultRank.textContent = '#3 (Perunggu)';
+                resultDesc.textContent = 'Tetap semangat! Tingkatkan kekompakan irama langkah untuk balapan berikutnya!';
+            }
+
+            resultScore.textContent = score;
+            resultQuiz.textContent = `${quizCorrect}/${quizCount}`;
+            resultTime.textContent = `${totalTime} detik`;
+
+            resultScreen.classList.remove('hidden');
+        }
+
+        /* EVENT LISTENERS */
+        btnStart.addEventListener('click', () => {
+            audio.init();
+            initGame();
+        });
+
+        btnRestart.addEventListener('click', () => {
+            initGame();
+        });
+
+        btnHome.addEventListener('click', () => {
+            isPlaying = false;
+            resultScreen.classList.add('hidden');
+            quizModal.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+            drawScene();
+        });
+
+        btnLeft.addEventListener('click', () => handleStep('LEFT'));
+        btnRight.addEventListener('click', () => handleStep('RIGHT'));
+
+        window.addEventListener('keydown', (e) => {
+            if (e.repeat) return;
+            const key = e.key.toLowerCase();
+            if (key === 'a' || key === 'arrowleft') {
+                handleStep('LEFT');
+            } else if (key === 'd' || key === 'arrowright') {
+                handleStep('RIGHT');
+            }
+        });
+
+        btnSoundToggle.addEventListener('click', () => {
+            audio.enabled = !audio.enabled;
+            soundIcon.className = audio.enabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark text-red-400';
+        });
+
+        drawScene();
+    </script>
+</body>
+</html>
